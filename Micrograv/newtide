@@ -1,0 +1,30 @@
+!    -*- f90 -*-
+! Note: the context of this file is case sensitive.
+
+subroutine ntid1(hr,iday,iyear,ncalc,delt) ! in newtide.f
+    real*8 :: hr
+    integer*4 :: iday
+    integer*4 :: iyear
+    integer*4 :: ncalc
+    real*8 :: delt
+    real*8 dimension(12,21000) :: astron
+    real*8 dimension(14,21000) :: tide
+    real*8 :: rtide
+    common astron,tide,rtide
+end subroutine ntid1
+subroutine ntid2(slat,slong,sh,kind,alpha,ncalc,rsta) ! in newtide.f
+    real*8 :: slat
+    real*8 :: slong
+    real*8 :: sh
+    integer*4 :: kind
+    real*8 :: alpha
+    integer*4 :: ncalc
+    real*8 :: rsta
+    real*8 dimension(12,21000) :: astron
+    real*8 dimension(14,21000) :: tide
+    real*8 :: rtide
+    common astron,tide,rtide
+end subroutine ntid2
+
+! This file was auto-generated with f2py (version:2).
+! See http://cens.ioc.ee/projects/f2py2e/

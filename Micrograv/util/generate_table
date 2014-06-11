@@ -1,0 +1,84 @@
+#!/bin/bash
+# generate tables of gravity values
+
+BINDIR=`dirname $0`
+DATAFILE=data.out
+TMPFILE=zap
+ABS_OUTFILE=gravityTable
+REL_OUTFILE=relativeTable
+
+# start
+if [ "X$1" == "X" ]; then
+  echo "Must provide name of file with station names to extract"
+  exit
+fi
+
+echo "creating tables..."
+
+
+## check for necessary files
+if [ ! -f $1 ]; then
+  echo "Must create file $1 with names of stations to extract!"
+  echo "See documentation for file format"
+  exit
+fi
+
+AVERAGE_SIGNAL=$2
+
+## check for existance of necessary subdirs
+if [ ! -d processed ]; then
+  mkdir processed
+fi
+if [ ! -d plot ]; then
+  mkdir plot
+fi
+
+## extract data from output files
+${BINDIR}/catdata.py > ${DATAFILE}
+if [ -f rename_stations ]; then
+  ${BINDIR}/rename.py rename_stations ${DATAFILE} > ${TMPFILE}
+  mv ${TMPFILE} ${DATAFILE}
+fi
+
+
+${BINDIR}/get_stations.py $1 ${DATAFILE} processed
+
+## remove an average signal, if desired
+if [ ! -z ${AVERAGE_SIGNAL} ]; then
+  if [ -f ${AVERAGE_SIGNAL} ]; then
+    for i in processed/*
+    do
+      ${BINDIR}/remove_base_signal.py ${AVERAGE_SIGNAL} $i > ${TMPFILE}
+      cp ${TMPFILE} $i
+    done
+  fi
+fi
+
+## create absolute value table
+${BINDIR}/cat.py processed/* > ${DATAFILE}
+${BINDIR}/make_table.py ${DATAFILE} > ${ABS_OUTFILE}
+
+## create plottable files
+# clear plot/ subdir
+rm -f plot/*
+for i in processed/*
+do
+  ${BINDIR}/calc_relative.py $i > plot/`basename $i`
+done
+
+## create relative value table
+${BINDIR}/cat.py plot/* > ${DATAFILE}
+${BINDIR}/make_table.py ${DATAFILE} > ${REL_OUTFILE}
+
+## Edit plottable files for single value for each day
+## Keep value with largest s.d.
+cd plot
+for i in *
+do
+  ${BINDIR}/uniqPlotFile.py $i > zap
+  mv zap $i
+done
+
+
+# stop
+echo done

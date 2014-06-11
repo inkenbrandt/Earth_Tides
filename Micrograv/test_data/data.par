@@ -1,0 +1,37 @@
+# comment
+[Parameters]
+# put station parameters in here:
+#Station_ID	lat	lon	elevation	dZ
+0.	45	110	1000	0
+1.	45	110	1000	0
+2.	45	110	1000	0
+3.	45	110	1000	0
+4.	45	110	1000	0
+5.	45	110	1000	0
+6.	45	110	1000	0
+7.	45	110	1000	0
+8.	45	110	1000	0
+9.	45	110	1000	0
+10.	45	110	1000	0
+11.	45	110	1000	0
+
+[repeats]
+# put station repeats in here
+# SID1	SID2
+0.	11.
+1.	5.
+1.	10.
+
+[names]
+0.	egi_bsmnt
+1.	windflower
+2.	main park
+3.	bicentennial park
+4.	morningview
+5.	windflower
+6.	bear park
+7.	falcon park
+8.	fox hunt drive
+9.	mountainview
+10.	windflower
+11.	egi_bsmnt

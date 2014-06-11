@@ -1,0 +1,12 @@
+#!/bin/bash
+
+d=`dirname $0`
+
+if [ $# -lt 6 ]; then
+  echo "usage: $0 xstart dx xend ystart dy yend > outputfile"
+  exit 1
+  fi
+
+echo "Position,Easting,Northing"
+$d/generate_horiz_grid.py $* 0 | \
+awk '{printf("%d %d,%.3f,%.3f\n",$1/1000,$2/1000,$1,$2)}'

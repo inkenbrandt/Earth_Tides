@@ -1,0 +1,449 @@
+C
+C  This main program is designed to call two subroutines by J.C. Harrison
+C  which generate various types of tides vs time for any point on the
+C  Earth's surface.  The generation of earth-strain tides using the Love
+C  numbers is approximate, assuming homogeneous/isotropic surface materials
+C  with no account for local topographic effects.
+C
+C  After input of starting time and the number of points to be generated,
+C  the user can choose various locations and tide types for subsequent
+C  generation.  Each computation set for a given location and tide type
+C  is output to a separate file, named by the user.
+C
+      IMPLICIT REAL*8(A-H,O-Z),INTEGER*4(I-N)
+      CHARACTER*40 FILE11
+      CHARACTER*6 STOPFL
+      REAL*4 TSTEP,AZIM,RL,RH,SH,RTIDE
+      DIMENSION ASTRON(12,21000),TIDE(14,21000),RTIDE(21000)
+      COMMON ASTRON,TIDE,RTIDE
+      PRINT 5
+   5  FORMAT(' Enter the starting time for computations,',/,' GMT,',
+     & ' Julian day, 2-digit year - FORMAT I4,I3,I2')
+      READ(*,10) IIHR,IMIN,IJDAY,IYEAR
+  10  FORMAT(2I2,I3,I2)
+      HR=IIHR+DBLE(IMIN)/60.0D0
+      PRINT 15
+  15  FORMAT(' Enter the number of tidal computations desired and',/,
+     & 'the interval (in hours) between computations - FORMAT I5,F10.5')
+      READ(*,20) NCALC,TSTEP
+  20  FORMAT(I5,F10.5)
+      DELT=DBLE(TSTEP)
+      CALL NTID1(HR,IJDAY,IYEAR,NCALC,DELT)
+  25  JDAY=IJDAY
+      IHR=IIHR
+      MIN=IMIN
+      PRINT 30
+  30  FORMAT(' Enter station height above sea level (meters).',/,
+     & ' FORMAT F6.1')
+      READ(*,35) SH
+  35  FORMAT(F6.1)
+      DSH=DBLE(SH)
+      PRINT 40
+  40  FORMAT(' Enter latitude (deg,min,sec), positive for',/,
+     & ' northern latitudes - FORMAT I3,2I2')
+      READ(*,45) LATDEG,LATMIN,LATSEC
+  45  FORMAT(I3,2I2)
+      PRINT 50
+  50  FORMAT(' Enter longitude (deg,min,sec), measured EAST from',/,
+     & ' Greenwich - FORMAT I3,2I2')
+      READ(*,45)LONDEG,LONMIN,LONSEC
+      SLAT=DBLE(LATDEG+(LATMIN+LATSEC/60.)/60.)
+      SLONG=DBLE(LONDEG+(LONMIN+LONSEC/60.)/60.)
+      PRINT 55
+  55  FORMAT(' Enter the integer code for tide type desired and the',/,
+     & ' azimuth for tilt or strain measurement (in degrees), north',/,
+     & ' through east - FORMAT I1,F6.2',//,
+     & ' TIDE TYPE CODE',/,
+     & '   1 - gravity tide in microgals, towards earth center.',/,
+     & '   2 - tilt tide in nanoradians, ref. earth center.',/,
+     & '   3 - first component of horizontal strain tide along given',/,
+     & '       azimuth .',/,
+     & '   4 - second component of horizontal strain tide',/,
+     & '   5 - tidal potential',/,
+     & '   6 - gravity tide in microgals, ref. earth ellipsoid.',/,
+     & '   7 - tilt tide in nanoradians, ref. earth ellipsoid.',/,
+     & '   8 - dry tidal dilatation in ppb.',/,
+     & '   9 - e theta lambda, shear component of n-s and e-w strain.')
+      READ(*,60) KIND,AZIM
+  60  FORMAT(I1,F6.2)
+      IFLAG=0
+      IFLAG2=0
+      PRINT 62
+   62 FORMAT(' do you want gmt-0 or pst-1 in output file?')
+      read(*,*) IFLAG2
+      IF (KIND.NE.8) GO TO 87
+        KIND=5
+        IFLAG=-1
+   87 DAZIM=DBLE(AZIM)
+  70  FORMAT(2F5.3)
+      CALL NTID2(SLAT,SLONG,DSH,KIND,DAZIM,NCALC,RSTA)
+      PRINT 75
+  75  FORMAT(' Enter file name for output of tide')
+      READ(*,80) FILE11
+  80  FORMAT(A40)
+      OPEN(11,FILE=FILE11,FORM='FORMATTED')
+c *** see melchior, 1966 pg. 115, eqn. 2.28 for l= .088, h= .638.
+c *** approx. g for latitude 36 degreees. : devils hole, nevada
+      IF(IFLAG.LT.0) THEN
+      TK=.748/(979.8*RSTA*.000000001)
+        DO 85 I=1,NCALC
+          RTIDE(I)=TK*SNGL(TIDE(14,I))
+  85    CONTINUE
+      ELSE
+        DO 95 I=1,NCALC
+          RTIDE(I)=SNGL(TIDE(14,I))
+  95    CONTINUE
+      END IF
+      IF (IFLAG2.EQ.1) THEN
+        IHR=IHR-8
+        IF (IHR.LT.0) THEN
+         JDAY=JDAY-1
+         IHR=IHR+24
+      END IF
+      END IF
+      TIME=JDAY+DBLE(IHR)/24.D0+DBLE(MIN)/1440.D0
+      DO 99 I=1,NCALC
+        WRITE(11,96) TIME,RTIDE(I)
+  96    FORMAT(F10.6,F12.4)
+        MIN=MIN+(DELT*60)
+        IF(MIN.GT.60) THEN
+          MIN=MIN-60
+          IHR=IHR+1
+        END IF
+        IF(IHR.GT.23) THEN
+          IHR=IHR-24
+          JDAY=JDAY+1
+        END IF
+        TIME=TIME+TSTEP/24.D0
+  99  CONTINUE
+      CLOSE(11)
+      PRINT 101
+ 101  FORMAT(' Enter "STOP" to end program OR hit carriage',/,
+     & ' return to continue with tide generation')
+      READ(*,102) STOPFL
+ 102  FORMAT(A6)
+      IF(STOPFL.NE.'STOP'.AND.STOPFL.NE.'stop') GO TO 25
+      STOP
+      END
+C
+C
+C
+C
+      SUBROUTINE NTID1(HR,IDAY,IYEAR,NCALC,DELT)
+      IMPLICIT REAL*8(A-H,O-Z),INTEGER*4(I-N)
+      DIMENSION ASTRON(12,21000),TIDE(14,21000)
+      COMMON ASTRON,TIDE,RTIDE
+      REAL*8 NOSTRA
+      DATA R/57.295779513082321D0/
+      DATA RC1,GM,GS/6.68449E-14,4.90287E18,1.32718E26/
+      DT=42.0D0/86400.0D0/36525.0D0
+C   TIME FROM 1900 JAN 0.5 IN JULIAN CENTURIES
+      IEXTRA=(IYEAR-1)/4
+      T=(365.0D0*IYEAR+IEXTRA+IDAY+HR/24.0D0-0.5D0)/36525.0D0
+     & -DELT/24.0D0/36525.0D0
+C   CONVERSION TO EPHEMERIS TIME BY ADDING 24 SECS.....
+      T=T+DT
+      W=(23.45229D0-0.01301D0*T)/R
+      SINW=SIN(W)
+      COSW=COS(W)
+      E1=0.01675104D0-0.0000418D0*T
+    9 DO 3 J=1,NCALC
+      T=T+DELT/36525.0D0/24.0D0
+  100 T2=T*T
+      T3=T2*T
+      S=(270.43416D0+481267.88314D0*T-0.00113D0*T2)/R
+      H=(279.69668D0+36000.76892D0*T+0.0003D0*T2)/R
+      P=(334.32956D0+4069.03403D0*T-0.01032D0*T2-0.00001D0*T3)/R
+      PS=(281.22083D0+1.71918D0*T+0.00045D0*T2)/R
+      AN=(259.18328D0-1934.14201D0*T+0.00208D0*T2)/R
+C   BL BLS BF BD ARE THE FUNDAMENTAL ARGUMENTS OF BROWNS THEORY
+      BL=S-P
+      BLS=H-PS
+      BF=S-AN
+      BD=S-H
+C   LUNAR LAT LONG AND PARALLAX FROM BROWN. LATTER TWO FROM
+C   IMPROVED LUNAR EPHEMERMIS, LATITUDE FROM RAS PAPER OF 1908....
+      TLONGM=S+0.10976*SIN(BL)-0.02224*SIN(BL-2.*BD)+0.01149*SIN(2.*BD)
+     1+0.00373*SIN(2.*BL)-.00324*SIN(BLS)-.00200*SIN(2.*BF)-0.00103*
+     2SIN(2.*BL-2.*BD)-.00100*SIN(BL+BLS-2.*BD)+.00093*SIN(BL+2.*BD)-
+     3.00080*SIN(BLS-2.*BD)+.00072*SIN(BL-BLS)-.00061*SIN(BD)-.00053*
+     4SIN(BL+BLS)
+      TLONGS=H+2.*E1*SIN(H-PS)+1.25*E1**2*SIN(2.*(H-PS))
+      TLATM=.08950*SIN(BF)+.00490*SIN(BL+BF)-.00485*SIN(BF-BL)-.00303*
+     1SIN(BF-2.*BD)+.00097*SIN(2.*BD+BF-BL)-.00081*SIN(BL+BF-2.*BD)
+     2+.00057*SIN(BF+2.*BD)
+      RDM=(3422.45+186.54*COS(BL)+34.31*COS(BL-2.*BD)+28.23*COS(2.*BD)+
+     110.17*COS(2.*BL)+3.09*COS(BL+2.*BD)+1.92*COS(BLS-2.*BD)+1.44*COS(
+     2BL+BLS-2.*BD)+1.15*COS(BL-BLS)-0.98*COS(BD)-0.95*COS(BL+BLS)-0.71
+     3*COS(BL-2.*BF)+0.62*COS(3.*BL)+0.60*COS(BL-4.*BD))/1.31559E14
+      RDS=RC1*(1.+E1*COS(H-PS)+0.00028*COS(2.*(H-PS)))
+      CONSTS=GS*(RDS**3)
+      CONSTM=GM*(RDM**3)
+      SINMLAT=SIN(TLATM)
+      COSMLAT=COS(TLATM)
+      SINMLNG=SIN(TLONGM)
+      COSMLNG=COS(TLONGM)
+      SINSLNG=SIN(TLONGS)
+      COSSLNG=COS(TLONGS)
+C   CONVERT FROM CELESTIAL LAT AND LONG ACCORDING TO EXPLAN SUPPL OF
+C   NA AND LE PAGE 26
+      COSPAS=SINSLNG*SINW
+      SINPAS=(1.-COSPAS**2)**0.5
+      ATS=SINSLNG*COSW
+      RAS=ATAN2(ATS,COSSLNG)
+      COSPAM=COSMLAT*SINMLNG*SINW+SINMLAT*COSW
+      SINPAM=(1.-COSPAM**2)**0.5
+      AT1=COSMLAT*SINMLNG*COSW-SINMLAT*SINW
+      AT2=COSMLAT*COSMLNG
+      RAM=ATAN2(AT1,AT2)
+      RAGM=(15.*(HR+(J-1)*DELT-12.))/R+H
+      TELS=RAS-RAGM
+      TELM=RAM-RAGM
+      SINTELS=SIN(TELS)
+      COSTELS=COS(TELS)
+      SINTELM=SIN(TELM)
+      COSTELM=COS(TELM)
+      S2TELS=2.*SINTELS*COSTELS
+      C2TELS=COSTELS**2-SINTELS**2
+      S2TELM=2.*SINTELM*COSTELM
+      C2TELM=COSTELM**2-SINTELM**2
+C   THE CARDS FROM HERE TO THE NEXT COMMENT PROVIDE A PRINTOUT FOR
+C   CHECKING THE ASTRONOMY ON EVERY 24TH COMPUTATION. THEY MAY
+C   BE OMITTED IF THIS CHECK IS NOT DESIRED.........
+C     PRINT 21
+C  21 FORMAT('1MOONS DECLIN SUNS DECLIN MOONS RT ASC SUNS RT ASC LUNAR
+C    X PARALLAX SUNS DISTANCE AU',/)
+C     I=(J-1)/24
+C     Q=(J-1)/24-I
+C     IF(Q .NE. 0.) GO TO 5
+C     PLXM=RDM*1.31559E14
+C     RVS=RC1/RDS
+C     DECM=ASIN(COSPAM)*R
+C     DECS=ASIN(COSPAS)*R
+C     IDECM=DECM
+C     IDECS=DECS
+C     FDECM=(DECM-IDECM)*60.
+C     FDECS=(DECS-IDECS)*60.
+C     FDECM=ABS(FDECM)
+C     FDECS=ABS(FDECS)
+C     DRAM=RAM*R/15.
+C     DRAS=RAS*R/15.
+C     IRAM=DRAM
+C     IRAS=DRAS
+C     FRAM=(DRAM-IRAM)*60.
+C     FRAS=(DRAS-IRAS)*60.
+C     FRAM=ABS(FRAM)
+C     FRAS=ABS(FRAS)
+C     PRINT 11,IDECM,FDECM,IDECS,FDECS,IRAM,FRAM,IRAS,FRAS,PLXM,RVS
+C  11 FORMAT(1H ,4(I3,1X,F6.2,3X),F15.3,F15.7)
+C   5 CONTINUE
+C   END OF OPTIONAL ASTRONOMICAL PRINTOUT.......
+      ASTRON(1,J)=0.25*CONSTS*(3.*COSPAS**2-1.)+0.25*CONSTM*(
+     13.*COSPAM**2-1.)
+      CASA=3.*CONSTS*SINPAS*COSPAS
+      NOSTRA=3.*CONSTM*SINPAM*COSPAM
+      ASTRON(2,J)=CASA*COSTELS+NOSTRA*COSTELM
+      ASTRON(3,J)=CASA*SINTELS+NOSTRA*SINTELM
+      CASA=0.75*CONSTS*SINPAS**2
+      NOSTRA=0.75*CONSTM*SINPAM**2
+      ASTRON(4,J)=CASA*C2TELS+NOSTRA*C2TELM
+      ASTRON(5,J)=CASA*S2TELS+NOSTRA*S2TELM
+      CONSTM=CONSTM*RDM
+      ASTRON(6,J)=0.25*CONSTM*(5.*COSPAM**3-3.*COSPAM)
+      NOSTRA=0.375*SINPAM*(5.*COSPAM**2-1.)*CONSTM
+      ASTRON(7,J)=NOSTRA*COSTELM
+      ASTRON(8,J)=NOSTRA*SINTELM
+      NOSTRA=3.75*CONSTM*SINPAM**2*COSPAM
+      ASTRON(9,J)=NOSTRA*C2TELM
+      ASTRON(10,J)=NOSTRA*S2TELM
+      NOSTRA=0.625*(SINPAM**3)*CONSTM
+      ASTRON(11,J)=NOSTRA*(4.*COSTELM**3-3.*COSTELM)
+      ASTRON(12,J)=NOSTRA*(3.*SINTELM-4.*SINTELM**3)
+    3 CONTINUE
+      RETURN
+      END
+C
+C
+C
+C
+      SUBROUTINE NTID2(SLAT,SLONG,SH,KIND,ALPHA,NCALC,RSTA)
+      IMPLICIT REAL*8(A-H,O-Z),INTEGER*4(I-N)
+      DIMENSION ASTRON(12,21000),TIDE(14,21000)
+      COMMON ASTRON,TIDE,RTIDE
+      DIMENSION GEOG(12)
+      DATA R/57.295779513082321D0/
+      SLATR=SLAT/R
+      DEL=.00337D0*SIN(2.*SLATR)
+      SLATR=SLATR-DEL
+      CSPA=SIN(SLATR)
+      SNPA=COS(SLATR)
+      SNLNG=SIN(SLONG/R)
+      CSLNG=COS(SLONG/R)
+      CSALF=COS(ALPHA/R)
+      SNALF=SIN(ALPHA/R)
+      C2LNG=CSLNG**2-SNLNG**2
+      S2LNG=2.*SNLNG*CSLNG
+      CPA2=CSPA**2
+      SPA2=SNPA**2
+      SNCSPA=SNPA*CSPA
+      A1=CSALF**2
+      A2=SNALF**2
+      A3=CSALF*SNALF
+      C3LNG=4.*CSLNG**3-3.*CSLNG
+      S3LNG=3.*SNLNG-4.*SNLNG**3
+      RSTA=6.378160E8*(1.-.003353*CSPA**2)+100.*SH
+      GO TO(1,2,3,4,5,6,7,9,9),KIND
+    1 GEOG(1)=3.*CPA2-1.
+      GEOG(2)=SNCSPA*CSLNG
+      GEOG(3)=SNCSPA*SNLNG
+      GEOG(4)=SPA2*C2LNG
+      GEOG(5)=SPA2*S2LNG
+      GEOG(6)=5.*CSPA**3-3.*CSPA
+      GEOG(7)=SNPA*(5.*CPA2-1.)*CSLNG
+      GEOG(8)=SNPA*(5.*CPA2-1.)*SNLNG
+      GEOG(9)=SPA2*CSPA*C2LNG
+      GEOG(10)=SPA2*CSPA*S2LNG
+      GEOG(11)=SNPA**3*C3LNG
+      GEOG(12)=SNPA**3*S3LNG
+      A=-2.*RSTA*10**6
+      B=-3.*RSTA**2*10**6
+      GO TO 10
+    2 GEOG(1)=6.*SNCSPA*CSALF
+      GEOG(2)=-(CPA2-SPA2)*CSLNG*CSALF-CSPA*SNLNG*SNALF
+      GEOG(3)=-(CPA2-SPA2)*SNLNG*CSALF+CSPA*CSLNG*SNALF
+      GEOG(4)=-2.*SNCSPA*C2LNG*CSALF-2.*SNPA*S2LNG*SNALF
+      GEOG(5)=-2.*SNCSPA*S2LNG*CSALF+2.*SNPA*C2LNG*SNALF
+      GEOG(6)=-3.*SNPA*(1.-5.*CPA2)*CSALF
+      GEOG(7)=-CSPA*(5.*(CPA2-2.*SPA2)-1.)*CSLNG*CSALF-(5.*CPA2-1.
+     X)*SNLNG*SNALF
+      GEOG(8)=-CSPA*(5.*(CPA2-2.*SPA2)-1.)*SNLNG*CSALF+(5.*CPA2-1.
+     X)*CSLNG*SNALF
+      GEOG(9)=-SNPA*(2.*CPA2-SPA2)*C2LNG*CSALF-2.*SNCSPA*S2LNG*SNALF
+      GEOG(10)=-SNPA*(2.*CPA2-SPA2)*S2LNG*CSALF+2.*SNCSPA*C2LNG*SNALF
+      GEOG(11)=-3.*SPA2*CSPA*C3LNG*CSALF-3.*SPA2*S3LNG*SNALF
+      GEOG(12)=-3.*SPA2*CSPA*S3LNG*CSALF+3.*SPA2*C3LNG*SNALF
+      A=RSTA*10**9/979.8
+      B=RSTA*A
+      GO TO 10
+    3 GEOG(1)=-6.*(CPA2-SPA2)*A1-6.*CPA2*A2
+      GEOG(2)=-4.*SNCSPA*CSLNG*A1-2.*SNCSPA*CSLNG*A2+2.*SNPA*SNLNG*A3
+      GEOG(3)=-4.*SNCSPA*SNLNG*A1-2.*SNCSPA*SNLNG*A2-2.*SNPA*CSLNG*A3
+      GEOG(4)=2.*(CPA2-SPA2)*C2LNG*A1+2.*C2LNG*(CPA2-2.)
+     1*A2-4.*CSPA*S2LNG*A3
+      GEOG(5)=2.*(CPA2-SPA2)*S2LNG*A1+2.*S2LNG*(CPA2-2.)*A2+4.*CSPA*
+     1C2LNG*A3
+      GEOG(6)=(30.*CSPA*SPA2-15.*CSPA*CPA2+3.*CSPA)*A1+3.*CSPA*(1.-
+     15.*CPA2)*A2
+      GEOG(7)=SNPA*(15.*SPA2-14.)*CSLNG*A2+SNPA*(45.*SPA2-34.)*CSLNG*A1
+     1+20.*SNCSPA*SNLNG*A3
+      GEOG(8)=SNPA*(15.*SPA2-14.)*SNLNG*A2+SNPA*(45.*SPA2-34.)*SNLNG*
+     1A1-20.*SNCSPA*CSLNG*A3
+      GEOG(9)=CSPA*C2LNG*(2.*CPA2-7.*SPA2)*A1+CSPA*C2LNG*(2.*CPA2-
+     1SPA2-4.)*A2+4.*S2LNG*(SPA2-CPA2)*A3
+      GEOG(10)=CSPA*S2LNG*(2.*CPA2-7.*SPA2)*A1+CSPA*S2LNG*(2.*CPA2-
+     1SPA2-4.)*A2+4.*C2LNG*(CPA2-SPA2)*A3
+      GEOG(11)=SNPA*C3LNG*(6.*CPA2-3.*SPA2)*A1+3.*SNPA*C3LNG*(CPA2-
+     13.)*A2-12.*SNCSPA*S3LNG*A3
+      GEOG(12)=SNPA*S3LNG*(6.*CPA2-3.*SNPA)*A1+3.*SNPA*S3LNG*(CPA2-
+     13.)*A2+12.*SNCSPA*C3LNG*A3
+      A=RSTA*10**9/979.8
+      B=RSTA*A
+      GO TO 10
+    4 GEOG(1)=3.*CPA2-1.
+      GEOG(2)=SNCSPA*CSLNG
+      GEOG(3)=SNCSPA*SNLNG
+      GEOG(4)=SPA2*C2LNG
+      GEOG(5)=SPA2*S2LNG
+      GEOG(6)=5.*CSPA**3-3.*CSPA
+      GEOG(7)=SNPA*(5.*CPA2-1.)*CSLNG
+      GEOG(8)=SNPA*(5.*CPA2-1.)*SNLNG
+      GEOG(9)=SPA2*CSPA*C2LNG
+      GEOG(10)=SPA2*CSPA*S2LNG
+      GEOG(11)=SNPA**3*C3LNG
+      GEOG(12)=SNPA**3*S3LNG
+      A=RSTA*10**9/979.8
+      B=RSTA*A
+      GO TO 10
+    5 GEOG(1)=3.*CPA2-1.
+      GEOG(2)=SNCSPA*CSLNG
+      GEOG(3)=SNCSPA*SNLNG
+      GEOG(4)=SPA2*C2LNG
+      GEOG(5)=SPA2*S2LNG
+      GEOG(6)=5.*CSPA**3-3.*CSPA
+      GEOG(7)=SNPA*(5.*CPA2-1.)*CSLNG
+      GEOG(8)=SNPA*(5.*CPA2-1.)*SNLNG
+      GEOG(9)=SPA2*CSPA*C2LNG
+      GEOG(10)=SPA2*CSPA*S2LNG
+      GEOG(11)=SNPA**3*C3LNG
+      GEOG(12)=SNPA*3**S3LNG
+      A=RSTA**2
+      B=A*RSTA
+      GO TO 10
+    6 GEOG(1)=-2.*(3.*CPA2-1.)-DEL*6.*SNCSPA
+      GEOG(2)=(-2.*SNCSPA+DEL*(CPA2-SPA2))*CSLNG
+      GEOG(3)=(-2.*SNCSPA+DEL*(CPA2-SPA2))*SNLNG
+      GEOG(4)=(-2.*SPA2+DEL*(2.*SNCSPA))*C2LNG
+      GEOG(5)=(-2.*SPA2+DEL*(2.*SNCSPA))*S2LNG
+      GEOG(6)=5.*CSPA**3-3.*CSPA
+      GEOG(7)=SNPA*(5.*CPA2-1.)*CSLNG
+      GEOG(8)=SNPA*(5.*CPA2-1.)*SNLNG
+      GEOG(9)=SPA2*CSPA*C2LNG
+      GEOG(10)=SPA2*CSPA*S2LNG
+      GEOG(11)=SNPA**3*C3LNG
+      GEOG(12)=SNPA**3*S3LNG
+      A=RSTA*10**6
+      B=-3.*RSTA**2*10**6
+      GO TO 10
+    7 GEOG(1)=(6.*SNCSPA-DEL*2.*(3.*CPA2-1.))*CSALF
+      GEOG(2)=(-(CPA2-SPA2)-DEL*2.*SNCSPA)*CSLNG*CSALF-CSPA*SNLNG*SNALF
+      GEOG(3)=(-(CPA2-SPA2)-DEL*2.*SNCSPA)*SNLNG*CSALF+CSPA*CSLNG*SNALF
+      GEOG(4)=(-2.*SNCSPA-DEL*2.*SPA2)*C2LNG*CSALF-2.*SNPA*S2LNG*SNALF
+      GEOG(5)=(-2.*SNCSPA-DEL*2.*SPA2)*S2LNG*CSALF+2.*SNPA*C2LNG*SNALF
+      GEOG(6)=-3.*SNPA*(1.-5.*CPA2)*CSALF
+      GEOG(7)=-CSPA*(5.*(CPA2-2.*SPA2)-1.)*CSLNG*CSALF-(5.*CPA2-1.
+     X)*SNLNG*SNALF
+      GEOG(8)=-CSPA*(5.*(CPA2-2.*SPA2)-1.)*SNLNG*CSALF+(5.*CPA2-1.
+     X)*CSLNG*SNALF
+      GEOG(9)=-SNPA*(2.*CPA2-SPA2)*C2LNG*CSALF-2.*SNCSPA*S2LNG*SNALF
+      GEOG(10)=-SNPA*(2.*CPA2-SPA2)*S2LNG*CSALF+2.*SNCSPA*C2LNG*SNALF
+      GEOG(11)=-3.*SPA2*CSPA*C3LNG*CSALF-3.*SPA2*S3LNG*SNALF
+      GEOG(12)=-3.*SPA2*CSPA*S3LNG*CSALF+3.*SPA2*C3LNG*SNALF
+      A=RSTA*10**9/979.8
+      B=RSTA*A
+      GO TO 10
+   9  GEOG(1)=0
+      GEOG(2)=2.*SNPA*SNLNG
+      GEOG(3)=-2.*SNPA*CSLNG
+      GEOG(4)=-4.*CSPA*S2LNG
+      GEOG(5)=4.*CSPA*C2LNG
+      GEOG(6)=0.00
+      GEOG(7)=20.*SNCSPA*SNLNG
+      GEOG(8)=-20.*SNCSPA*CSLNG
+      GEOG(9)=4.*(SPA2-CPA2)*S2LNG
+      GEOG(10)=+4.*(CPA2-SPA2)*C2LNG
+      GEOG(11)=-12.*SNCSPA*S3LNG
+      GEOG(12)=12.*SNCSPA*C3LNG
+      A=RSTA*10**9/979.8
+      B=A*RSTA
+   10 CONTINUE
+      DO 11 I=1,NCALC
+      TIDE(1,I)=A*GEOG(1)*ASTRON(1,I)
+      TIDE(2,I)=A*GEOG(2)*ASTRON(2,I)
+      TIDE(3,I)=A*GEOG(3)*ASTRON(3,I)
+      TIDE(4,I)=A*GEOG(4)*ASTRON(4,I)
+      TIDE(5,I)=A*GEOG(5)*ASTRON(5,I)
+      DO 12 J=6,12
+      TIDE(J,I)=B*GEOG(J)*ASTRON(J,I)
+   12 CONTINUE
+      SUM=0.
+      DO 13 J=1,5
+      SUM=SUM+TIDE(J,I)
+   13 CONTINUE
+      TIDE(13,I)=SUM
+      DO 14 J=6,12
+      SUM=SUM+TIDE(J,I)
+   14 CONTINUE
+      TIDE(14,I)=SUM
+   11 CONTINUE
+      RETURN
+      END

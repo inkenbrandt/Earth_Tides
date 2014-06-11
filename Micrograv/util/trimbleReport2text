@@ -1,0 +1,23 @@
+#!/bin/bash
+
+if [ $# -lt 1 ]; then
+  echo "usage: $0 inputFile"
+  echo "output is to standard out, with all files concatenated"
+  exit 1
+  fi
+
+# process each file in turn
+while [ $# -gt 0 ]; do
+  # convert HTML to text, and strip useless bits out
+  lynx -dump -width=120 $1 | \
+  awk 'BEGIN{flag=0}/Back to top/{flag=0}flag{print $0}/Height Quality/{flag++}' | \
+  tr \\260\'\"  \  | \
+  grep -v '^$' | \
+  sort -bf --key=1,2 | \
+  awk '{lat=$2+($3/60)+($4/3600);if($5 == "S") lat *= -1.0;
+        lon=$6+($7/60)+($8/3600);if($9 == "W") lon *= -1.0;
+        printf("%-10s %11.6f %12.6f %11.3f %11.3f %9.3f\n",
+               $1, lat, lon, $10, $11, $12);}'
+
+  shift
+  done

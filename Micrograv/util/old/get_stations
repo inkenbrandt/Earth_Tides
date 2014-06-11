@@ -1,0 +1,19 @@
+#!/bin/bash
+awk '$1 == "BEAR" {printf("%10s %10s %9.3f %9.3f\n", $5, $1, $3, $4)}' data.out > processed/BEAR
+awk '$1 == "BICP" {printf("%10s %10s %9.3f %9.3f\n", $5, $1, $3, $4)}' data.out > processed/BICP
+awk '$1 == "EGI"  {printf("%10s %10s %9.3f %9.3f\n", $5, $1, $3, $4)}' data.out > processed/EGI
+awk '$1 == "FALC" {printf("%10s %10s %9.3f %9.3f\n", $5, $1, $3, $4)}' data.out > processed/FALC
+awk '$1 == "FOXH" {printf("%10s %10s %9.3f %9.3f\n", $5, $1, $3, $4)}' data.out > processed/FOXH
+awk '$1 == "MAIN" {printf("%10s %10s %9.3f %9.3f\n", $5, $1, $3, $4)}' data.out > processed/MAIN
+awk '$1 == "MNTN" {printf("%10s %10s %9.3f %9.3f\n", $5, $1, $3, $4)}' data.out > processed/MNTN
+awk '$1 == "MOCK" {printf("%10s %10s %9.3f %9.3f\n", $5, $1, $3, $4)}' data.out > processed/MOCK
+awk '$1 == "WIND" {printf("%10s %10s %9.3f %9.3f\n", $5, $1, $3, $4)}' data.out > processed/WIND
+awk '$1 == "VALT" {printf("%10s %10s %9.3f %9.3f\n", $5, $1, $3, $4)}' data.out > processed/VALT
+awk '$1 == "AIRP" {printf("%10s %10s %9.3f %9.3f\n", $5, $1, $3, $4)}' data.out > processed/AIRP
+awk '$1 == "CPTL" {printf("%10s %10s %9.3f %9.3f\n", $5, $1, $3, $4)}' data.out > processed/CPTL
+awk '$1 == "REDB" {printf("%10s %10s %9.3f %9.3f\n", $5, $1, $3, $4)}' data.out > processed/REDB
+awk '$1 == "PCBM" {printf("%10s %10s %9.3f %9.3f\n", $5, $1, $3, $4)}' data.out > processed/PCBM
+awk '$1 == "SLCJ" {printf("%10s %10s %9.3f %9.3f\n", $5, $1, $3, $4)}' data.out > processed/SLCJ
+awk '$1 == "SLCX" {printf("%10s %10s %9.3f %9.3f\n", $5, $1, $3, $4)}' data.out > processed/SLCX
+awk '$1 == "WBB"  {printf("%10s %10s %9.3f %9.3f\n", $5, $1, $3, $4)}' data.out > processed/WBB
+

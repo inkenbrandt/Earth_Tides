@@ -1,0 +1,70 @@
+          PYTHON SOURCE FOR GRAVITY DATA REDUCTION
+This is the source of the microgravity gravity reduction software package.
+This file is nearly always out of date in the details; see the source
+for the most up-to-date details.
+
+The code is written in Python, using version 2 or later and Tk.
+Documentation for the code is currently very sparse.  Theoretically,
+the "helpful, on-screen instructions" should be all that is necessary
+to use the software.
+
+Much of this code requires the Scipy Python package to be installed.
+
+Most command-line programs give a usage response if incorrectly run.
+
+There are some example data sets in the subdirectory test_data/.
+
+Data file formats are often documented in the program that reads them.
+
+*****************
+** THIS SOFTWARE IS OFFERED UNDER THE GPL, v2
+** THERE ARE NO WARRANTIES, EXPRESS OR IMPLIED
+** 
+** ALL SOURCE CODE NOT OTHERWISE NOTED IS (C)1999-2009 Paul Gettings
+***************** 
+
+
+FILE DESCRIPTIONS OF MOST IMPORTANT FILES
+README			This file
+
+reduce.py		"4-D" microgravity reduction program
+
+cg5view.py		Interactive data plotter for text CG-5 data
+
+cg5e_cmd.py		Command-line program to parse CG-5 data file
+			into plottable files.
+
+makeparameters.py	Interactive program to build a reduce.py
+			parameter file from separate small files.
+
+make_parm_file.py	Command-line program to build a reduce.py
+			parameter file from separate small files
+
+reduce2pfact.py		Convert an output file from reduce.py to the
+			input format for USGS SWFO gravity programs.
+
+iztc_dem.py		Compute near-station terrain corrections using
+			high-resolution (e.g. 1-2 m) DEMs.
+
+etc_table.py		Compute a table of Earth tide corrections for a
+			given date and location.
+
+aliodview.py		Interactive data plotter for raw Aliod data
+
+viewdata.py		Interactive data plotter for raw CG-3 data
+
+util/			Subdirectory with miscellaneous stand-alone
+			utility programs. Many require code from the
+			main program (e.g. thiele or fileop modules),
+			but run outside of "reduce.py".
+			Also includes BASH shell scripts and other
+			possibly non-portable code.
+
+util/llsq.py		Linear least-squares fit to y=ax+b
+util/residual.py	Compute residual for a column of a file
+util/jd2date.py		Convert absolute Julian Date in a column to date string
+util/tilt_error.py	Computes Scintrex CG-3M tilt zero error
+util/tilt_sens.py	Computes Scintrex CG-3M tilt sensitivity
+util/trend.py		Remove linear trend from column of data
+
+LAST UPDATED: 8 Apr 2009

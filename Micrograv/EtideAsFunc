@@ -1,0 +1,62 @@
+!    -*- f90 -*-
+! Note: the context of this file is case sensitive.
+
+function firsthorztidestrain3(etime,slat,slong,salt,azim) ! in EtideAsFunc.f
+    real*8 :: etime
+    real*8 :: slat
+    real*8 :: slong
+    real*8 :: salt
+    real*8 :: azim
+    double precision :: firsthorztidestrain3
+end function firsthorztidestrain3
+function secondhorztidestrain4(etime,slat,slong,salt) ! in EtideAsFunc.f
+    real*8 :: etime
+    real*8 :: slat
+    real*8 :: slong
+    real*8 :: salt
+    double precision :: secondhorztidestrain4
+end function secondhorztidestrain4
+function gravitytide6(etime,slat,slong,salt) ! in EtideAsFunc.f
+    real*8 :: etime
+    real*8 :: slat
+    real*8 :: slong
+    real*8 :: salt
+    double precision :: gravitytide6
+end function gravitytide6
+function tilttide7(etime,slat,slong,salt) ! in EtideAsFunc.f
+    real*8 :: etime
+    real*8 :: slat
+    real*8 :: slong
+    real*8 :: salt
+    double precision :: tilttide7
+end function tilttide7
+function drytide8(etime,slat,slong,salt) ! in EtideAsFunc.f
+    real*8 :: etime
+    real*8 :: slat
+    real*8 :: slong
+    real*8 :: salt
+    double precision :: drytide8
+end function drytide8
+function sheartide9(etime,slat,slong,salt) ! in EtideAsFunc.f
+    real*8 :: etime
+    real*8 :: slat
+    real*8 :: slong
+    real*8 :: salt
+    double precision :: sheartide9
+end function sheartide9
+subroutine ntide1(etime,astron) ! in EtideAsFunc.f
+    real*8 :: etime
+    real*8 dimension(12) :: astron
+end subroutine ntide1
+function tid2(slat,slong,sh,kind,alpha,astron) ! in EtideAsFunc.f
+    real*8 :: slat
+    real*8 :: slong
+    real*8 :: sh
+    integer*4 :: kind
+    real*8 :: alpha
+    real*8 dimension(12) :: astron
+    real*8 :: tid2
+end function tid2
+
+! This file was auto-generated with f2py (version:2).
+! See http://cens.ioc.ee/projects/f2py2e/
