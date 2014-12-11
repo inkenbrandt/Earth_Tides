@@ -11,14 +11,14 @@ import csv
 import time
 import matplotlib.pyplot as plt
 import statsmodels.tsa.tsatools as tools
-import sys
-from scipy.ndimage import gaussian_filter
-import numpy.fft as fft
-sys.path.append('C:\\PROJECTS\\Snake_Valley\\PYTHON\\PROCESSING\\New folder')
+#import sys
+#from scipy.ndimage import gaussian_filter
+#import numpy.fft as fft
+#sys.path.append('C:\\PROJECTS\\Snake_Valley\\PYTHON\\PROCESSING\\New folder')
 import tamura
 
-filename='bp_wl_data.csv'
-outfile='be_dataout.csv'
+filename='eBP.csv'
+outfile='be_dataout1.csv'
 
 lag = 200
 
@@ -256,15 +256,15 @@ sig2 = numpy.interp(t, xls_date, z)
 
 #Now sig1 and sig2 are sampled at the same points.
 
-print sig1
-print sig2
+#print sig1
+#print sig2
 
-plt.figure()
+#plt.figure()
 #plt.plot(t,sig1)
 #plt.twinx()
 #plt.plot(t,sig2)
-plt.xcorr(sig1,sig2)
-plt.show()
+#plt.xcorr(sig1,sig2)
+#plt.show()
 
 """
 Rectify and smooth, so 'peaks' will stand out.
