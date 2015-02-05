@@ -15,8 +15,16 @@ from pandas import ExcelWriter
 
 lag = 200
 
-df = pd.io.excel.read_excel("C:\\Users\\PAULINKENBRANDT\\Documents\\GitHub\\Earth_Tides\\Millville_WLBP.xlsx","Sheet1", index_col=0)
-wld = df.resample('10Min')
+df = pd.io.excel.read_excel("C:\Users\PAULINKENBRANDT\Downloads\E5382-MonitoringData (1)\North_Side_Weirs.xlsx","Main", index_col=0)
+wld = df.resample('60Min')
+
+wld['NB_wl_std']=pd.stats.moments.rolling_std('NB_ft_water',24)
+wld['NB_wl_avg']=pd.stats.moments.rolling_mean('NB_ft_water',24)
+
+
+wld['NB_ft_water'].plot(style='k--')
+wld['NB_wl_avg'].plot(style='k')
+
 wldata = wld.ix[1050:]
 
 wldata['rollmean'] = pd.rolling_mean(wldata['wlelev_m'],30)
